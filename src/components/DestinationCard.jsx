@@ -7,17 +7,28 @@ const DestinationCard = ({ destination, showActions = true }) => {
   const { toggleFavorite, favorites } = useTrips();
   const isFavorite = favorites.includes(destination.id);
 
+  // Create a proper fallback image URL
+  const fallbackImage = `https://via.placeholder.com/400x250/e2e8f0/1e40af?text=${encodeURIComponent(destination.name || 'Trip')}`;
+
+  const handleImageError = (e) => {
+    e.target.src = fallbackImage;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden transition transform hover:shadow-lg hover:-translate-y-1">
       <div className="relative">
         <img 
-          src={destination.image || "/api/placeholder/400/250"} 
+          src={destination.image || fallbackImage} 
           alt={destination.name} 
           className="w-full h-48 object-cover"
+          onError={handleImageError}
         />
         {showActions && (
           <button
-            onClick={() => toggleFavorite(destination.id)}
+            onClick={(e) => {
+              e.preventDefault(); // Prevent triggering card click
+              toggleFavorite(destination.id);
+            }}
             className="absolute top-2 right-2 p-2 bg-white bg-opacity-75 rounded-full"
           >
             <Star 
@@ -35,7 +46,7 @@ const DestinationCard = ({ destination, showActions = true }) => {
           <span className="text-sm">{destination.location}</span>
         </div>
         
-        {destination.dates && (
+        {destination.startDate && destination.endDate && (
           <div className="flex items-center space-x-1 text-gray-500 mt-1">
             <Calendar className="h-4 w-4" />
             <span className="text-sm">

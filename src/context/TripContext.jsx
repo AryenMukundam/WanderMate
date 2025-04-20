@@ -1,7 +1,15 @@
-import React, { createContext, useContext, useEffect, useState, useReducer } from 'react';
+import React, { createContext, useContext, useEffect, useReducer } from 'react';
 
+// Create the TripContext
 const TripContext = createContext();
 
+// Storage keys
+const STORAGE_KEYS = {
+  TRIPS: 'wandermate_trips',
+  FAVORITES: 'wandermate_favorites'
+};
+
+// Initial state
 const initialState = {
   trips: [],
   favorites: [],
@@ -9,61 +17,102 @@ const initialState = {
   error: null   
 };
 
+// Check if localStorage is available and working
+const isLocalStorageAvailable = () => {
+  try {
+    const testKey = '__test__';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    console.warn('localStorage not available:', e);
+    return false;
+  }
+};
+
+// Load data from localStorage
+const loadFromStorage = (key, defaultValue) => {
+  if (!isLocalStorageAvailable()) return defaultValue;
+  
+  try {
+    const storedValue = localStorage.getItem(key);
+    return storedValue ? JSON.parse(storedValue) : defaultValue;
+  } catch (error) {
+    console.error(`Error loading data from localStorage (${key}):`, error);
+    return defaultValue;
+  }
+};
+
+// Save data to localStorage
+const saveToStorage = (key, data) => {
+  if (!isLocalStorageAvailable()) return;
+  
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error(`Error saving data to localStorage (${key}):`, error);
+  }
+};
+
+// Reducer function
 function tripReducer(state, action) {
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
+      
     case 'SET_ERROR':
       return { ...state, error: action.payload, loading: false };
+      
     case 'SET_TRIPS':
       return { ...state, trips: action.payload, loading: false };
-    case 'ADD_TRIP':
-      return { ...state, trips: [...state.trips, action.payload] };
-    case 'UPDATE_TRIP':
-      return {
-        ...state,
-        trips: state.trips.map(trip => 
-          trip.id === action.payload.id ? action.payload : trip
-        )
-      };
-    case 'DELETE_TRIP':
-      return {
-        ...state,
-        trips: state.trips.filter(trip => trip.id !== action.payload)
-      };
-    case 'TOGGLE_FAVORITE':
-      return {
-        ...state,
-        favorites: state.favorites.includes(action.payload)
-          ? state.favorites.filter(id => id !== action.payload)
-          : [...state.favorites, action.payload]
-      };
+      
+    case 'SET_FAVORITES':
+      return { ...state, favorites: action.payload };
+      
+    case 'ADD_TRIP': {
+      const updatedTrips = [...state.trips, action.payload];
+      // Save immediately to ensure persistence
+      saveToStorage(STORAGE_KEYS.TRIPS, updatedTrips);
+      return { ...state, trips: updatedTrips };
+    }
+    
+    case 'UPDATE_TRIP': {
+      const updatedTrips = state.trips.map(trip => 
+        trip.id === action.payload.id ? action.payload : trip
+      );
+      // Save immediately to ensure persistence
+      saveToStorage(STORAGE_KEYS.TRIPS, updatedTrips);
+      return { ...state, trips: updatedTrips };
+    }
+    
+    case 'DELETE_TRIP': {
+      const updatedTrips = state.trips.filter(trip => trip.id !== action.payload);
+      // Save immediately to ensure persistence
+      saveToStorage(STORAGE_KEYS.TRIPS, updatedTrips);
+      return { ...state, trips: updatedTrips };
+    }
+    
+    case 'TOGGLE_FAVORITE': {
+      const updatedFavorites = state.favorites.includes(action.payload)
+        ? state.favorites.filter(id => id !== action.payload)
+        : [...state.favorites, action.payload];
+      // Save immediately to ensure persistence
+      saveToStorage(STORAGE_KEYS.FAVORITES, updatedFavorites);
+      return { ...state, favorites: updatedFavorites };
+    }
+    
     default:
       return state;
   }
 }
 
 export function TripProvider({ children }) {
-  const [state, dispatch] = useReducer(tripReducer, initialState);
-
-  useEffect(() => {
-    const storedTrips = localStorage.getItem('wandermate_trips');
-    const storedFavorites = localStorage.getItem('wandermate_favorites');
-    
-    if (storedTrips) {
-      dispatch({ type: 'SET_TRIPS', payload: JSON.parse(storedTrips) });
-    }
-    
-    if (storedFavorites) {
-      dispatch({ type: 'SET_FAVORITES', payload: JSON.parse(storedFavorites) });
-    }
-  }, []);
-
-  // Save to local storage whenever state changes
-  useEffect(() => {
-    localStorage.setItem('wandermate_trips', JSON.stringify(state.trips));
-    localStorage.setItem('wandermate_favorites', JSON.stringify(state.favorites));
-  }, [state.trips, state.favorites]);
+  // Initialize state with data from localStorage
+  const [state, dispatch] = useReducer(tripReducer, {
+    ...initialState,
+    trips: loadFromStorage(STORAGE_KEYS.TRIPS, []),
+    favorites: loadFromStorage(STORAGE_KEYS.FAVORITES, [])
+  });
 
   // Creating a new trip
   const addTrip = (tripData) => {
@@ -102,9 +151,15 @@ export function TripProvider({ children }) {
     dispatch({ type: 'TOGGLE_FAVORITE', payload: id });
   };
 
+  // Debug data
+  useEffect(() => {
+    console.log('Current state:', state);
+    console.log('Stored trips:', loadFromStorage(STORAGE_KEYS.TRIPS, []));
+  }, [state.trips.length]);
+
   const value = {
     trips: state.trips,
-    favorites: state.favorites,
+    favorites: state.favorites || [], 
     loading: state.loading,
     error: state.error,
     addTrip,

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTrips } from '../context/TripContext';
 import { Calendar, MapPin, DollarSign, Clock, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import { getAttractions } from '../services/api';
+import { getCityImage, getPlaceholderImage } from '../services/imageApi';
 import TripForm from '../components/TripForm';
 
 const TripDetails = () => {
@@ -13,15 +14,45 @@ const TripDetails = () => {
   const [editing, setEditing] = useState(false);
   const [attractions, setAttractions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  
+  const handleImageError = (e) => {
+    e.target.src = getPlaceholderImage(trip?.name || 'Trip');
+  };
   
   useEffect(() => {
     const foundTrip = trips.find(t => t.id === id);
     setTrip(foundTrip);
     
-    if (foundTrip?.coordinates) {
-      loadAttractions(foundTrip.coordinates);
+    if (foundTrip) {
+      if (foundTrip.coordinates) {
+        loadAttractions(foundTrip.coordinates);
+      }
+      
+      // Load image if not already available
+      if (!foundTrip.image) {
+        loadCityImage(foundTrip);
+      }
     }
   }, [id, trips]);
+  
+  const loadCityImage = async (tripData) => {
+    if (!tripData || !tripData.location) return;
+    
+    setImageLoading(true);
+    try {
+      const imageUrl = await getCityImage(tripData.location, { width: 1200, height: 600 });
+      if (imageUrl) {
+        const updatedTrip = { ...tripData, image: imageUrl };
+        updateTrip(tripData.id, updatedTrip);
+        setTrip(updatedTrip);
+      }
+    } catch (error) {
+      console.error('Error loading trip image:', error);
+    } finally {
+      setImageLoading(false);
+    }
+  };
   
   const loadAttractions = async (coordinates) => {
     if (!coordinates || !coordinates.lat || !coordinates.lon) return;
@@ -111,11 +142,18 @@ const TripDetails = () => {
         <>
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="relative h-64">
-              <img
-                src={trip.image || "/api/placeholder/800/400"}
-                alt={trip.name}
-                className="w-full h-full object-cover"
-              />
+              {imageLoading ? (
+                <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                  <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                </div>
+              ) : (
+                <img
+                  src={trip.image || getPlaceholderImage(trip.name)}
+                  alt={trip.name}
+                  className="w-full h-full object-cover"
+                  onError={handleImageError}
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
               <div className="absolute bottom-0 left-0 p-6 text-white">
                 <h1 className="text-3xl font-bold mb-2">{trip.name}</h1>

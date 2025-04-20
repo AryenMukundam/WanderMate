@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTrips } from '../context/TripContext';
 import DestinationCard from '../components/DestinationCard';
@@ -6,32 +6,82 @@ import EmptyState from '../components/EmptyState';
 import { Calendar, Plus, Filter } from 'lucide-react';
 
 const MyTrips = () => {
-  const { trips } = useTrips();
+  const { trips, loading, error } = useTrips();
   const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'past'
+  const [debugInfo, setDebugInfo] = useState('');
   
-  const filteredTrips = trips.filter(trip => {
-    const tripDate = new Date(trip.startDate);
-    const today = new Date();
+  // Add debugging to monitor trips data
+  useEffect(() => {
+    console.log('Trips in MyTrips component:', trips);
+    setDebugInfo(`Trips count: ${trips.length}`);
     
-    if (filter === 'upcoming') {
-      return tripDate >= today;
-    } else if (filter === 'past') {
-      return tripDate < today;
+    // Check localStorage directly for comparison
+    try {
+      const storedTrips = localStorage.getItem('wandermate_trips');
+      console.log('Raw localStorage trips:', storedTrips);
+      const parsedTrips = storedTrips ? JSON.parse(storedTrips) : [];
+      console.log('Parsed localStorage trips:', parsedTrips);
+      setDebugInfo(prev => `${prev} | LocalStorage: ${parsedTrips.length}`);
+    } catch (e) {
+      console.error('Error reading from localStorage:', e);
+      setDebugInfo(prev => `${prev} | LocalStorage error`);
     }
-    return true;
-  });
+  }, [trips]);
   
-  // Sort trips by date
-  filteredTrips.sort((a, b) => {
-    const dateA = new Date(a.startDate);
-    const dateB = new Date(b.startDate);
+  // Safe filter that handles null or undefined values
+  const filteredTrips = trips?.filter(trip => {
+    if (!trip || !trip.startDate) return false;
     
-    if (filter === 'upcoming') {
-      return dateA - dateB; // Closest date first
-    } else {
-      return dateB - dateA; // Newest first
+    try {
+      const tripDate = new Date(trip.startDate);
+      const today = new Date();
+      
+      if (filter === 'upcoming') {
+        return tripDate >= today;
+      } else if (filter === 'past') {
+        return tripDate < today;
+      }
+      return true;
+    } catch (e) {
+      console.error('Error filtering trip:', e, trip);
+      return false;
     }
-  });
+  }) || [];
+  
+  // Safe sort that handles potential errors
+  try {
+    filteredTrips.sort((a, b) => {
+      const dateA = new Date(a.startDate);
+      const dateB = new Date(b.startDate);
+      
+      if (filter === 'upcoming') {
+        return dateA - dateB; // Closest date first
+      } else {
+        return dateB - dateA; // Newest first
+      }
+    });
+  } catch (e) {
+    console.error('Error sorting trips:', e);
+  }
+
+  // Show loading state if data is loading
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Show error message if there was an error
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+        <p className="font-medium">Error loading trips</p>
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -45,7 +95,21 @@ const MyTrips = () => {
         </Link>
       </div>
       
-      {trips.length > 0 ? (
+      {/* Debug information in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-gray-100 p-2 text-xs text-gray-600 rounded">
+          {debugInfo}
+        </div>
+      )}
+      
+      {(!trips || trips.length === 0) ? (
+        <EmptyState
+          title="No trips found"
+          description="You haven't planned any trips yet. Start by searching for a destination."
+          action="Find Destinations"
+          link="/search"
+        />
+      ) : (
         <>
           <div className="flex items-center space-x-2 border-b border-gray-200 pb-4">
             <Filter className="h-5 w-5 text-gray-500" />
@@ -104,13 +168,6 @@ const MyTrips = () => {
             />
           )}
         </>
-      ) : (
-        <EmptyState
-          title="No trips found"
-          description="You haven't planned any trips yet. Start by searching for a destination."
-          action="Find Destinations"
-          link="/search"
-        />
       )}
     </div>
   );

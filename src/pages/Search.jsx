@@ -1,10 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SearchForm from '../components/SearchForm';
 import DestinationCard from '../components/DestinationCard';
 import EmptyState from '../components/EmptyState';
 import TripForm from '../components/TripForm';
-import { searchDestinations } from '../services/api';
+import { getCityImage, getPlaceholderImage } from '../services/imageApi';
+
+// Mock API function since the real implementation isn't visible
+const searchDestinations = async (query) => {
+  // This is a placeholder implementation
+  // In a real app, this would make an API call
+  try {
+    return {
+      xid: `place-${Date.now()}`,
+      name: query,
+      country: "Example Country",
+      timezone: "Local Time",
+      point: { lat: 40.7128, lon: -74.0060 }
+    };
+  } catch (error) {
+    console.error("Search error:", error);
+    throw error;
+  }
+};
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,13 +41,21 @@ const Search = () => {
       const data = await searchDestinations(query);
       
       if (data && data.name) {
+        // Get city image from our new API
+        let imageUrl = null;
+        try {
+          imageUrl = await getCityImage(data.name, { width: 400, height: 250 });
+        } catch (imgError) {
+          console.error('Error fetching destination image:', imgError);
+        }
+        
         const formattedResults = [
           {
             id: data.xid || `place-${Date.now()}`,
             name: data.name,
             location: `${data.country || ''} ${data.country ? '·' : ''} ${data.timezone || ''}`.trim(),
             description: '',
-            image: '/api/placeholder/400/250', 
+            image: imageUrl || getPlaceholderImage(data.name, 400, 250),
             coordinates: data.point ? { lat: data.point.lat, lon: data.point.lon } : null
           }
         ];

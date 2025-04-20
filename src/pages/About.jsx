@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { MapPin, Globe, Clock, Shield } from 'lucide-react';
 
 const About = () => {
