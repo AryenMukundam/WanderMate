@@ -1,12 +1,53 @@
-# React + Vite
+# WanderMate
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Your Personal Travel Companion
 
-Currently, two official plugins are available:
+WanderMate is a user-friendly trip planning application that helps you organize your travel plans, manage your budget, and keep track of your favorite destinations—all without requiring any internet connection or server storage.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+### 🗺️ Trip Planning
+- Create and manage detailed trip itineraries
+- Set travel dates and destinations
+- Add custom notes and travel plans for each day
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 💰 Budget Management
+- Track actual spending against your budget
+- Visual breakdown of your trip expenses
+- Currency conversion support for international travel
+
+### 📱 Offline Access
+- All your data is stored locally on your device
+- No account creation or internet connection required
+- Full functionality even without network connectivity
+
+### ❤️ Favorites
+- Mark destinations and trips as favorites for quick access
+- Filter and sort your trips by favorite status
+- View your most loved destinations at a glance
+
+### 🔒 Privacy-Focused
+- Your travel data never leaves your device
+- No tracking or data collection
+- Complete control over your personal information
+
+## Getting Started
+
+1. Visit: https://wander-mate-kappa.vercel.app/
+2. Create your first trip by tapping the "+" button
+3. Enter your destination, dates, and budget details
+4. Start planning your perfect adventure!
+
+## Technical Details
+
+WanderMate is built using React for a responsive and intuitive user interface. All data is stored in your browser's localStorage, ensuring your information remains on your device.
+
+The application uses:
+- React Context API for state management
+- Local Storage for data persistence
+- Responsive design for desktop and mobile use
+
+
+---
+
+Happy Traveling with WanderMate! ✈️
